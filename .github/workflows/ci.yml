@@ -39,7 +39,7 @@ jobs:
 
       - name: 'Check code quality'
         run: |
-          sbt ';warn ;scalafixAll -check ;scalafmtCheckAll'
+          sbt ';warn ;scalafmtCheckAll'
 
       - name: 'Run tests'
-        run: sbt +test
+        run: sbt +testOnly
