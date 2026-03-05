@@ -1,5 +1,7 @@
 ThisBuild / dynverVTagPrefix := false
 
+ThisBuild / previousStableVersion := Some("1.0.0")
+
 ThisBuild / version := {
   val Stable = """([0-9]+)\.([0-9]+)\.([0-9]+)""".r
 
@@ -22,7 +24,7 @@ ThisBuild / version := {
           }
 
           case _ =>
-            "1.0.0" // TODO: sys.error("Fails to determine previous stable version")
+            sys.error("Fails to determine previous stable version")
         }
       } else {
         descr.ref.value
