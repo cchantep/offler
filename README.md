@@ -16,7 +16,7 @@ Ensure the Scalafix SBT plugin is enabled in `project/plugins.sbt`:
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.5")
 ```
 
-Then adjust your `.scalafix.conf`:
+Then create or update `.scalafix.conf`:
 
 ```conf
 rules = [
@@ -27,11 +27,13 @@ rules = [
 
 ## Usage
 
-    sbt scalafix
+```bash
+sbt scalafix
+```
 
 ## Rules
 
-(Rule #1) Calls matching forbidden apply targets must be avoided. See [Configuration: `forbiddenApplies`](#forbiddenapplies) to declare project-specific forbidden apply target regexes. This is useful to enforce a consistent, owner-qualified API style (for example with Spark SQL helpers), and prevent ambiguous shortcuts.
+(Rule #1) Avoid calls that match forbidden apply targets. See [Configuration: `forbiddenApplies`](#forbiddenapplies) to define project-specific forbidden target regexes. This helps enforce a consistent, owner-qualified API style (for example with Spark SQL helpers) and avoids ambiguous shortcuts.
 
 ```scala
 import org.apache.spark.sql.{ functions => F }
@@ -43,7 +45,7 @@ val c1 = F.column("id")
 val c2 = F.col("id")
 ```
 
-(Rule #2) Import paths matching forbidden patterns must be avoided. See [Configuration: `forbiddenImports`](#forbiddenimports) to declare project-specific forbidden import regexes.
+(Rule #2) Avoid import paths that match forbidden patterns. See [Configuration: `forbiddenImports`](#forbiddenimports) to define project-specific forbidden import regexes.
 
 ```scala
 // Forbidden when `forbiddenImports` matches this path
@@ -53,7 +55,7 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{ functions => F }
 ```
 
-(Rule #3) When it's possible, nested call to single argument function (`Function1`) should be written without `.` and `(..)`, to limit `(..)` nesting that leads to bad readability. See [Configuration: `postfixExcludedQualifiers`](#postfixexcludedqualifiers) to exclude specific qualifiers from this rewrite/check logic.
+(Rule #3) When possible, write nested single-argument calls (`Function1`) without `.` and `(..)` to reduce parenthesis nesting and improve readability. See [Configuration: `postfixExcludedQualifiers`](#postfixexcludedqualifiers) to exclude specific qualifiers from this rewrite/check logic.
 
 ```scala
 if (mySeq.contains(elem)) { ... } // `contains` call nested in `if (..)` ..
@@ -63,7 +65,7 @@ if (mySeq.contains(elem)) { ... } // `contains` call nested in `if (..)` ..
 if (mySeq contains elem) { ... }
 ```
 
-> When not nested the previous rule mustn't be applied:
+When the call is not nested, this rule must not be applied:
 
 ```scala
 val elemContained = mySeq.contains(elem)
@@ -72,7 +74,7 @@ val elemContained = mySeq.contains(elem)
 val elemContained = mySeq contains elem
 ```
 
-(Rule #4) For a similar constraint to avoid too much nested parenthesis, `Tuple2` should be written using the `a -> b` syntax, rather than `(a, b)`.
+(Rule #4) To avoid excessive parenthesis nesting, prefer `a -> b` over `(a, b)` for `Tuple2`.
 
 ```scala
 Map((key, value))
@@ -84,7 +86,7 @@ Map(key -> value)
 Success({})
 ```
 
-(Rule #5) Unnecessary block parenthesis or curly braces for single expression should also be avoid.
+(Rule #5) Avoid unnecessary parenthesis or braces around single-expression blocks.
 
 ```scala
 val foo = {
@@ -96,7 +98,7 @@ val foo = {
 val foo = MyBar(...)
 ```
 
-As counterpart, multiline block should be surrounded by/not omit parenthesis.
+Conversely, multiline blocks should use explicit braces.
 
 ```scala
 x match {
@@ -119,7 +121,7 @@ x match {
 }
 ```
 
-In case or coupled blocks and/or statements, mainly for `if`/`else`, the same style must be applied for both. If `if` or `else` requires surrounding `{ ... }` according this rule, then both must comply with that.
+For coupled branches (mainly `if`/`else`), apply the same block style to both sides. If either branch requires `{ ... }` according to this rule, both branches should use braces.
 
 ```scala
 if (x) res1
@@ -138,7 +140,7 @@ if (x) {
 }
 ```
 
-(Rule #6) Most of the time, multiline blocks and/or statements (except inside call parameters) must be separated by a blank line from surrounding other blocks and statements.
+(Rule #6) In most cases, multiline blocks or statements (except inside call parameters) should be separated from surrounding statements by a blank line.
 
 ```scala
 val foo = callX(
@@ -157,7 +159,7 @@ val foo = callX(
 val ipsum = callY(1)
 ```
 
-(Rule #7) Except for readability edge-cases, do not use unnecessary intermediate value.
+(Rule #7) Except for readability edge cases, avoid unnecessary intermediate values.
 
 ```scala
 def bad(): T = {
@@ -168,32 +170,32 @@ def bad(): T = {
 def good(): T = doSomething()
 ```
 
-(Rule #8) As far as it's pragmatic, "groups" of line in a same block must be separated by a single blank line.
+(Rule #8) As far as practical, separate logical groups of lines in the same block with a single blank line.
 
 ```scala
 val foo = "bar"
 val lorem = "ipsum"
 doSomething(foo, lorem)
 
-// should be rewritten by spacing declaration a subsequent call
+// should be rewritten by spacing declarations and subsequent calls
 
 val foo = "bar"
 val lorem = "ipsum"
 
-doSomthing(foo, lorem)
+doSomething(foo, lorem)
 ```
 
-(Rule #9) Data model types (mainly case class) must avoid default values. See [Configuration: `caseClassNoDefaultValues`](#caseclassnodefaultvalues) to control this check.
+(Rule #9) Data model types (mainly case classes) should avoid default values. See [Configuration: `caseClassNoDefaultValues`](#caseclassnodefaultvalues) to control this check.
 
 ```scala
 case class Foo(score: Int = 0)
 
 // must be
 
-case class Foo(score: Int) // with default value in the process according context
+case class Foo(score: Int) // provide defaulting in the calling process if needed
 ```
 
-(Rule #10) Type member definitions (except for literal), and also local definitions if not trivial, should explicitly declare (return) type. See [Configuration: `noTypeBlockThreshold`](#notypeblockthreshold) to tune when explicit type annotations become required.
+(Rule #10) Type member definitions (except literals), and non-trivial local definitions, should declare explicit (return) types. See [Configuration: `noTypeBlockThreshold`](#notypeblockthreshold) to tune when explicit type annotations become required.
 
 ```scala
 object Example {
@@ -301,7 +303,7 @@ Lists import patterns that are rejected by semantic checks.
 
 Use this to ban broad or unsafe imports and guide developers toward approved alternatives.
 
-This is especially useful for patterns such as `import org.apache.spark.sql.functions._`. In many Spark codebases, a common convention is to use an alias import like `import org.apache.spark.sql.{ functions => F }` and then call helpers as `F.col`, `F.when`, `F.lit`, etc. Preventing wildcard imports helps ensure calls stay consistently namespaced with their owner, which improves readability and avoids accidental symbol collisions.
+This is especially useful for patterns such as `import org.apache.spark.sql.functions._`. In many Spark codebases, a common convention is to use an alias import such as `import org.apache.spark.sql.{ functions => F }` and then call helpers as `F.col`, `F.when`, `F.lit`, and so on. Preventing wildcard imports helps keep calls consistently namespaced with their owner, improving readability and avoiding accidental symbol collisions.
 
 Each entry is matched against the fully qualified imported symbol path.
 
