@@ -20,11 +20,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: 'Set up JDK 1.8'
+      - name: 'Set up JDK'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'
+          java-version: '11'
 
       - name: 'Setup sbt launcher'
         uses: sbt/setup-sbt@v1
