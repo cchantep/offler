@@ -88,5 +88,5 @@ jobs:
           PUBLISH_REPO_ID: "central.sonatype.com"
           PUBLISH_REPO_URL: "https://central.sonatype.com/repository/maven-snapshots/"
           PUBLISH_USER: ${{ secrets.SONATYPE_USER }}
-          PUBLISH_PASS: ${{ secrets.SONATYPE_PASSWORD }}
-        run: sbt +rules/publish
+          PUBLISH_PASS: ${{ secrets.SONATYPE_PASS }}
+        run: sbt warn +rules/publish

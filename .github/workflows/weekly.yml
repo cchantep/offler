@@ -3,7 +3,8 @@ on:
     - cron: '0 12 * * 0'
 name: weekly
 permissions:
-  workflows: write
+  contents: write
+  pull-requests: write
 jobs:
   scala-steward:
     runs-on: ubuntu-latest
