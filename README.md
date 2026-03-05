@@ -10,6 +10,8 @@ Add the Scalafix rules artifact to your build:
 ThisBuild / libraryDependencies += "io.github.cchantep" %% "offler-rules" % "<version>"
 ```
 
+Latest version: [![Maven Central](https://img.shields.io/maven-central/v/io.github.cchantep/offler-rules_2.13?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.cchantep/offler-rules_2.13)
+
 Ensure the Scalafix SBT plugin is enabled in `project/plugins.sbt`:
 
 ```sbt
@@ -86,7 +88,7 @@ Map(key -> value)
 Success({})
 ```
 
-(Rule #5) Avoid unnecessary parenthesis or braces around single-expression blocks.
+(Rule #5) Unnecessary block parenthesis or curly braces for single expression should also be avoided.
 
 ```scala
 val foo = {
@@ -388,4 +390,22 @@ val transformed: Dataset[Row] = {
   // complex multi-line logic
   ???
 }
+```
+
+## Build manually
+
+The rules modules can be built using [SBT](https://www.scala-sbt.org).
+
+    sbt +publishLocal
+
+*Running tests:* [![CI](https://github.com/cchantep/offler/workflows/CI/badge.svg)](https://github.com/cchantep/offler/actions/workflows/ci.yml)
+
+The tests for the rules can be executed.
+
+    sbt +testOnly
+
+Publish on Sonatype:
+
+```bash
+./project/staging.sh +publishSigned
 ```

@@ -50,26 +50,43 @@ jobs:
     needs: [build_n_test]
 
     steps:
-    - name: 'Checkout repository'
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
+      - name: 'Checkout repository'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-    - name: Check if HEAD is tagged
-      id: tag_check
-      run: |
-        if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
-          echo "tagged=true" >> "$GITHUB_OUTPUT"
-        else
-          echo "tagged=false" >> "$GITHUB_OUTPUT"
-        fi
+      - name: Check if HEAD is tagged
+        id: tag_check
+        run: |
+          if git describe --exact-match --tags HEAD >/dev/null 2>&1; then
+            echo "tagged=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tagged=false" >> "$GITHUB_OUTPUT"
+          fi
 
-    - name: 'Publish snapshot (master)'
-      if: ${{ steps.tag_check.outputs.tagged == 'false' && github.ref == 'refs/heads/master' }}
-      env:
-        PUBLISH_REPO_NAME: "Sonatype Nexus Repository Manager"
-        PUBLISH_REPO_ID: "central.sonatype.com"
-        PUBLISH_REPO_URL: "https://central.sonatype.com/repository/maven-snapshots/"
-        PUBLISH_USER: ${{ secrets.SONATYPE_USER }}
-        PUBLISH_PASS: ${{ secrets.SONATYPE_PASSWORD }}
-      run: sbt +rules/publish
+      - name: 'Set up JDK'
+        if: ${{ steps.tag_check.outputs.tagged == 'false' && github.ref == 'refs/heads/master' }}
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+
+      - name: 'Setup sbt launcher'
+        if: ${{ steps.tag_check.outputs.tagged == 'false' && github.ref == 'refs/heads/master' }}
+        uses: sbt/setup-sbt@v1
+
+      - name: 'Coursier cache'
+        if: ${{ steps.tag_check.outputs.tagged == 'false' && github.ref == 'refs/heads/master' }}
+        uses: coursier/cache-action@v8
+        with:
+          extraKey: ${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+
+      - name: 'Publish snapshot (master)'
+        if: ${{ steps.tag_check.outputs.tagged == 'false' && github.ref == 'refs/heads/master' }}
+        env:
+          PUBLISH_REPO_NAME: "Sonatype Nexus Repository Manager"
+          PUBLISH_REPO_ID: "central.sonatype.com"
+          PUBLISH_REPO_URL: "https://central.sonatype.com/repository/maven-snapshots/"
+          PUBLISH_USER: ${{ secrets.SONATYPE_USER }}
+          PUBLISH_PASS: ${{ secrets.SONATYPE_PASSWORD }}
+        run: sbt +rules/publish
