@@ -11,6 +11,8 @@ lazy val rules = project
     libraryDependencies += "ch.epfl.scala" %% "scalafix-core" % _root_.scalafix.sbt.BuildInfo.scalafixVersion
   )
 
+val scalaXml = "org.scala-lang.modules" %% "scala-xml" % "2.4.0"
+
 lazy val input = project
   .in(file("input"))
   .disablePlugins(ScalafixPlugin, ScalafmtPlugin)
@@ -18,7 +20,10 @@ lazy val input = project
     name := "input",
     description := "Input for tests about Scalafix rules",
     publish / skip := true,
-    libraryDependencies += compilerPlugin(scalafixSemanticdb),
+    libraryDependencies ++= Seq(
+      compilerPlugin(scalafixSemanticdb),
+      scalaXml
+    ),
     scalacOptions ~= {
       _.filterNot(_ == "-Xfatal-warnings")
     }
@@ -30,6 +35,7 @@ lazy val output = project
     name := "output",
     description := "Output for tests about Scalafix rules",
     scalafmtOnCompile := false,
+    libraryDependencies += scalaXml,
     publish / skip := true,
     scalacOptions ~= {
       _.filterNot(_ == "-Xfatal-warnings")
