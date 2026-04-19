@@ -258,14 +258,25 @@ final class GoodCodeSyntax(
           case blk @ Term.Block(
                 (body @ (Term.Select(_, _) | Term.Apply.After_4_6_0(_, _) |
                 GoodCodeSyntax.NotUnitLit() | Term.Interpolate(_, _, _))) :: Nil
-              ) if (tree.parent.exists {
+              ) if (blk.parent.exists {
                 case Term.If.After_4_4_0(_, _, _, _) |
                     Term.Try.After_4_9_9(_, _, _) | Term.ArgClause(_, _) |
                     Term.Interpolate(_, _, _) | Term.For.After_4_9_9(_, _) =>
                   false
 
-                case _ =>
-                  true
+                case parent => {
+                  // Check if the block or its siblings contain XML-like content
+                  // by examining if parent contains XML delimiters
+                  val parentSyntax = parent.syntax
+
+                  val hasXmlLike = parentSyntax.contains("</") ||
+                    (parentSyntax.contains("<") && !parentSyntax
+                      .contains("<<") &&
+                      parentSyntax.contains(">") && !parentSyntax
+                        .contains(">>"))
+
+                  !hasXmlLike
+                }
               } && (GoodCodeSemantic.textSize(body) <= singleTermBlockThreshold)) =>
             patch + fixSingleTermBlock(blk, body)
 
@@ -1458,6 +1469,17 @@ object GoodCodeSyntax {
 
   private[offler] def regexMatches(regex: Regex, value: String): Boolean =
     regex.pattern.matcher(value).matches()
+
+  private[offler] def hasInterpolateAncestor(tree: Tree): Boolean = {
+    @annotation.tailrec
+    def go(current: Tree): Boolean = current.parent match {
+      case Some(Term.Interpolate(_, _, _)) => true
+      case Some(parent)                    => go(parent)
+      case None                            => false
+    }
+
+    go(tree)
+  }
 
   val singleTermBlockThreshold = 50
 

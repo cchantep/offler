@@ -58,7 +58,7 @@ object Foo {
       )))
     } else {
       val x = foo.name.indexOf("b")
-      val _ = rule3_1(foo.name.map(_ => "x"))
+      val _ = rule5_1(foo.name.map(_ => "x"))
       val y = x -> foo.name.indexOf("bar")
 
       println(s"x = $y")
@@ -98,7 +98,7 @@ object Foo {
 
   // --- Rule#5 ---
 
-  def rule3_1(in: Seq[String]): Seq[String] = in.map(s => {
+  def rule5_1(in: Seq[String]): Seq[String] = in.map(s => {
     val x = s"prefix:$s"
 
     // Missing surrounding parenthesis
@@ -110,7 +110,7 @@ object Foo {
   })
 
   // `If`-...
-  def rule3_2(in: Seq[String]): Long = in.foldLeft(0L)((c: Long, str: String) => {
+  def rule5_2(in: Seq[String]): Long = in.foldLeft(0L)((c: Long, str: String) => {
     val upd = c + str.size
 
     val x: Long = {
@@ -276,14 +276,14 @@ object Foo {
     x + (y * z) - 1L
   })
 
-  def rule3_3(in: Seq[String]): Seq[Unit] = in.map((s: String) => {
+  def rule5_3(in: Seq[String]): Seq[Unit] = in.map((s: String) => {
     val v = s"prefix:$s"
     val l = s.size + 1
 
     s"$v -> $l"
   }).map(_ => {})
 
-  def rule3_4(): Unit = {
+  def rule5_4(): Unit = {
     def hof[T, R](z: T)(f: T => Unit)(r: R): Unit = {
       println(s"r = $r")
       f(z)
@@ -296,7 +296,7 @@ object Foo {
     })("test6")
   }
 
-  def rule3_5(): Unit = {
+  def rule5_5(): Unit = {
     def exec1(f: () => Unit) = f()
 
     // exec1(() => { .. }) ~> exec1 { () => .. }
@@ -352,7 +352,7 @@ object Foo {
     exec4(println("Redundant block with lambda and comment"))
   }
 
-  def rule3_6(): Unit = {
+  def rule5_6(): Unit = {
     val seed: Boolean = System.currentTimeMillis() % 2 == 0
 
     seed match {
@@ -374,7 +374,7 @@ object Foo {
     }
   }
 
-  def rule3_7(): Unit = {
+  def rule5_7(): Unit = {
     val res1: Option[Int] = for {
       v <- Some("foo")
     } yield (v.size)
@@ -442,8 +442,8 @@ object Foo {
     println(s"- $res1 $res2 $res3 $res4 $res5 $res6 $res7 $res8 $res9 $res10 $res11 $res12 $res13")
   }
 
-  def rule3_8(): Unit = {
-    val input = rule3_1(Seq.empty)
+  def rule5_8(): Unit = {
+    val input = rule5_1(Seq.empty)
 
     // #rule4_cases
     input match {
@@ -465,7 +465,7 @@ object Foo {
     }
   }
 
-  def rule3_9(): Unit = {
+  def rule5_9(): Unit = {
     def res1: Option[String] = for {
       a <- Option("foo")
       b <-
@@ -483,6 +483,8 @@ object Foo {
 
     println(s"res1 = $res1")
   }
+
+  def rule5_10(arg: Int): scala.xml.Elem = <Args><Arg>{(arg + 1).toString}</Arg></Args>
 
   // --- Rule#6 ---
 
