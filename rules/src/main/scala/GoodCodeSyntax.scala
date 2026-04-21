@@ -88,7 +88,7 @@ final class GoodCodeSyntax(
 
           case t @ Term.Apply.After_4_6_0(
                 sel @ Term.Select(qual, nme),
-                Term.ArgClause(Seq(arg), _)
+                ac @ Term.ArgClause(Seq(arg), _)
               )
               if ({
                 val q = qual.text
@@ -98,6 +98,8 @@ final class GoodCodeSyntax(
                   q
                 )
               } &&
+                // Skip rewrite if this is a context arg clause (using ...)
+                !ac.tokens.exists(_.text == "using") &&
                 t.pos.startLine == t.pos.endLine &&
                 sel.text.contains(".") && t.parent.exists {
                   case `if` @ Term.If.After_4_4_0(`t`, _, _, _) =>
