@@ -242,7 +242,10 @@ final class GoodCodeSyntax(
               }
               .toSeq
 
-          case blk @ Term.Block(_) if (blk.parent.exists {
+          case blk @ Term.Block(_)
+              if (!GoodCodeSyntax.hasQuotedOrSplicedAncestor(
+                blk
+              ) && blk.parent.exists {
                 case Term.Block(`blk` :: Nil) =>
                   true
 
@@ -260,7 +263,10 @@ final class GoodCodeSyntax(
           case blk @ Term.Block(
                 (body @ (Term.Select(_, _) | Term.Apply.After_4_6_0(_, _) |
                 GoodCodeSyntax.NotUnitLit() | Term.Interpolate(_, _, _))) :: Nil
-              ) if (blk.parent.exists {
+              )
+              if (!GoodCodeSyntax.hasQuotedOrSplicedAncestor(
+                blk
+              ) && blk.parent.exists {
                 case Term.If.After_4_4_0(_, _, _, _) |
                     Term.Try.After_4_9_9(_, _, _) | Term.ArgClause(_, _) |
                     Term.Interpolate(_, _, _) | Term.For.After_4_9_9(_, _) =>
@@ -272,14 +278,16 @@ final class GoodCodeSyntax(
                   val parentSyntax = parent.syntax
 
                   val hasXmlLike = parentSyntax.contains("</") ||
-                    (parentSyntax.contains("<") && !parentSyntax
-                      .contains("<<") &&
-                      parentSyntax.contains(">") && !parentSyntax
-                        .contains(">>"))
+                    (parentSyntax
+                      .contains("<") && !parentSyntax.contains("<<") &&
+                      parentSyntax
+                        .contains(">") && !parentSyntax.contains(">>"))
 
                   !hasXmlLike
                 }
-              } && (GoodCodeSemantic.textSize(body) <= singleTermBlockThreshold)) =>
+              } && (GoodCodeSemantic.textSize(
+                body
+              ) <= singleTermBlockThreshold)) =>
             patch + fixSingleTermBlock(blk, body)
 
           case Term.EnumeratorsBlock(enums) => {
@@ -624,7 +632,11 @@ final class GoodCodeSyntax(
               }
               ._4
 
-            updatedPatch + fixIntermediaryDef(blk, body)
+            if (GoodCodeSyntax.hasQuotedOrSplicedAncestor(blk)) {
+              updatedPatch
+            } else {
+              updatedPatch + fixIntermediaryDef(blk, body)
+            }
           }
 
           case _ =>
@@ -1478,6 +1490,18 @@ object GoodCodeSyntax {
       case Some(Term.Interpolate(_, _, _)) => true
       case Some(parent)                    => go(parent)
       case None                            => false
+    }
+
+    go(tree)
+  }
+
+  private[offler] def hasQuotedOrSplicedAncestor(tree: Tree): Boolean = {
+    @annotation.tailrec
+    def go(current: Tree): Boolean = current.parent match {
+      case Some(Term.QuotedMacroExpr(_)) | Some(Term.SplicedMacroExpr(_)) =>
+        true
+      case Some(parent) => go(parent)
+      case None         => false
     }
 
     go(tree)

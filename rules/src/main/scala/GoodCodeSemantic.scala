@@ -200,9 +200,15 @@ object GoodCodeSemantic {
           // #ignoreSelect
           textSize(tree) > threshold
 
-        case Term.Interpolate(_, _, _) =>
-          // #ignoreStringInterpolation
+        case Term.Interpolate(Term.Name("s" | "f" | "raw"), _, _) =>
+          // #ignoreStringInterpolation (keep existing behavior for standard interpolation)
+          textSize(tree) > threshold &&
           !tree.symbol.info.exists(_.toString.indexOf(": String") != -1)
+
+        case Term.Interpolate(_, _, _) =>
+          // Custom/non-standard interpolation (e.g. quasiquote) must not be rewritten
+          // into missing declaration type errors by this rule path.
+          false
 
         case Term.Apply.After_4_6_0(term, _) => {
           // #ignoreCompanionApply; e.g. Seq(..)
@@ -238,7 +244,9 @@ object GoodCodeSemantic {
             None,
             Some(tpe),
             body @ Term.Interpolate(_, _, _)
-          ) if (tpe.text.endsWith("String") && textSize(body) < threshold) =>
+          )
+          if (isStringInterpolation(body) &&
+            isDeclaredAsString(tpe) && textSize(body) < threshold) =>
         typeAscription(tree)
 
       case Defn.Def.After_4_6_0(
@@ -250,8 +258,18 @@ object GoodCodeSemantic {
           ) if (textSize(body) < threshold) =>
         typeAscription(tree)
 
-      case Defn.Val(_, _, Some(_), body @ (Lit(_) | Term.Interpolate(_, _, _)))
+      case Defn.Val(_, _, Some(_), body @ Lit(_))
           if (textSize(body) < threshold) =>
+        typeAscription(tree)
+
+      case Defn.Val(
+            _,
+            _,
+            Some(tpe),
+            body @ Term.Interpolate(_, _, _)
+          )
+          if (isStringInterpolation(body) &&
+            isDeclaredAsString(tpe) && textSize(body) < threshold) =>
         typeAscription(tree)
 
       case _ =>
@@ -278,6 +296,24 @@ object GoodCodeSemantic {
           ascript.dropRight(1)
 
       }
+    }
+
+    private def isStringInterpolation(tree: Tree): Boolean = tree match {
+      case Term.Interpolate(Term.Name("s" | "f" | "raw"), _, _) =>
+        true
+
+      case _ =>
+        false
+    }
+
+    private def isDeclaredAsString(tpe: Type): Boolean = {
+      val repr = tpe.syntax.replace(" ", "")
+
+      repr == "String" ||
+      repr == "scala.Predef.String" ||
+      repr == "_root_.scala.Predef.String" ||
+      repr == "java.lang.String" ||
+      repr == "_root_.java.lang.String"
     }
   }
 }
