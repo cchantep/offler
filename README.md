@@ -142,6 +142,20 @@ if (x) {
 }
 ```
 
+Known limitation (with scalafmt): when one branch is a short lambda expression, scalafmt may compact this branch back to a single-line block while `OfflerGoodCodeSyntax` expects multiline canonical style for the coupled `if`/`else`.
+
+In such localized cases, a practical workaround is to disable scalafmt only around the conflicting block:
+
+```scala
+// format: off
+if (cond) {
+  (_: String) => ()
+} else {
+  report.warning(_: String)
+}
+// format: on
+```
+
 (Rule #6) In most cases, multiline blocks or statements (except inside call parameters) should be separated from surrounding statements by a blank line.
 
 ```scala
